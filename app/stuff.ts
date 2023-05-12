@@ -1,4 +1,5 @@
-import { Observable, from} from 'rxjs';
+import { Seq } from 'immutable';
+import { Observable, filter, from, map, scan } from 'rxjs';
 
 export interface FlightVector {
     icao24: string
@@ -21,5 +22,19 @@ export interface FlightVector {
 }
 
 export function lift(data: FlightVector[]): Observable<FlightVector> {
-    return from(data) 
+    return from(data)
+}
+
+export function topCountry(data: Observable<FlightVector>): Observable<string> {
+    const seed: Map<string, number> = new Map()
+    return data.pipe(
+        scan((acc, v) => {
+            const entry = acc.get(v.origin_country);
+            const newCount = entry ? entry + 1 : 1;
+
+            return acc.set(v.origin_country, newCount);
+        }, seed),
+        map(m => Seq(m.entries()).maxBy(([, count]) => count)?.[0]),
+        filter((s): s is string => !!s)
+    );
 }
