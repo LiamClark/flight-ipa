@@ -1,10 +1,10 @@
 import { describe, expect, test } from '@jest/globals';
-import {lift , FlightVector } from "../app/stuff"
+import {lift , FlightVector } from "../app/Batch"
 import { TestScheduler } from 'rxjs/testing';
 import { Observable, firstValueFrom } from 'rxjs';
 
 
-const data: FlightVector[] = [
+export const data: FlightVector[] = [
     {
         icao24: "e8027b",
         callsign: "LAN580  ",

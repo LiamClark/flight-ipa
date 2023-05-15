@@ -8,7 +8,6 @@ function loadData() {
     const url = testing ? "http://localhost:3000/flight.json" : "https://opensky-network.org/api/states/all"
     return fetch(url)
         .then(r => r.json())
-        // debugger
 }
 
 export default function Flight() {
