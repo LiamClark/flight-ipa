@@ -1,6 +1,6 @@
 import { Seq } from 'immutable';
-import { EMPTY, Observable, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
-import { Config } from './Config';
+import { EMPTY, Observable, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
+import { Config, convertToHourlyRate } from './Config';
 import { dateFromTimeStamp } from './TimeWindows';
 import { date } from 'superstruct';
 
@@ -64,44 +64,52 @@ function topThreeCountries(xs: FlightVector[]): string[] {
 
 }
 
-// First lets do the amount of flights in an hour.
-function flightsPerHour(xs: FlightVector[], state: FlightsPerHourState) {
-    const dates: [FlightVector, Date][] = xs.map(x => [x, dateFromTimeStamp(x.time_position)])
-    //TODO: If we roll into a new day reset the state. 
-    const newState = anyMatch(dates, ([_, d]) => d.getDate() != new Date().getDate()) ? state : state
-
-    // Here I want to remove flights we already have recorded for the current hour.
-    const flightsToLocate = dates.filter(([f, d]) => { 
-        const callSigns = newState.flights.get(d.getHours())
-        if (callSigns) {
-            //we flip because we are interested in new flights!
-           return !callSigns.has(f.callsign) 
-
-        } else {
-            const set: Set<string> = new Set(f.callsign)
-            newState.flights.set(d.getHours(), set)
-            //if we have no flights for this this needs to go through therefor we return true
-            return true;
-        }
-    })
-
-    from(flightsToLocate).pipe(
-        //filter to flights only above the netherlands
-        mergeMap(([f,d]) => filterGeoLocation(f)))
-        
+function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
+    return from(xs).pipe(
+        mergeMap(filterGeoLocation),
+        count(),
+        map(c => convertToHourlyRate(config, c))
     )
-
-
 }
 
-function anyMatch<A>(xs: A[], f: (x: A) => boolean) {
-    for (let x of xs) {
-        if (f(x)) {
-            return true;
-        }
-    }
-    return false;
-}
+
+// // First lets do the amount of flights in an hour.
+// function flightsPerHour(xs: FlightVector[], state: FlightsPerHourState) {
+//     const dates: [FlightVector, Date][] = xs.map(x => [x, dateFromTimeStamp(x.time_position)])
+//     //TODO: If we roll into a new day reset the state. 
+//     const newState = anyMatch(dates, ([_, d]) => d.getDate() != new Date().getDate()) ? state : state
+
+//     // Here I want to remove flights we already have recorded for the current hour.
+//     const flightsToLocate = dates.filter(([f, d]) => { 
+//         const callSigns = newState.flights.get(d.getHours())
+//         if (callSigns) {
+//             //we flip because we are interested in new flights!
+//            return !callSigns.has(f.callsign) 
+
+//         } else {
+//             const set: Set<string> = new Set(f.callsign)
+//             newState.flights.set(d.getHours(), set)
+//             //if we have no flights for this this needs to go through therefor we return true
+//             return true;
+//         }
+//     })
+
+//     from(flightsToLocate).pipe(
+//         //filter to flights only above the netherlands
+//         mergeMap(([f,d]) => filterGeoLocation(f)))
+
+//     )
+
+// }
+
+// function anyMatch<A>(xs: A[], f: (x: A) => boolean) {
+//     for (let x of xs) {
+//         if (f(x)) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
 
 //if I want to show buckets of hours I need to know which hour already knows about which flights a.k.a. 
 interface FlightsPerHourState {

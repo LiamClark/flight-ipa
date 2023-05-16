@@ -4,3 +4,9 @@ export interface Config {
     //polling interval in ms
     pollingInterval: number
 }
+
+
+export function convertToHourlyRate(config: Config, n: number) {
+    const factorToHour = 3_600_000 / config.pollingInterval
+    return n * factorToHour 
+}
