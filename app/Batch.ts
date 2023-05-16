@@ -2,8 +2,6 @@ import { List, Seq } from 'immutable';
 import { EMPTY, Observable, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
 import { Config, convertToHourlyRate } from './Config';
 import { dateFromTimeStamp } from './TimeWindows';
-import { date } from 'superstruct';
-import { Alice } from 'next/font/google';
 
 export interface FlightVector {
     icao24: string
@@ -26,11 +24,36 @@ export interface FlightVector {
     position_source: number
 }
 
-function loadData(config: Config): Observable<FlightVector[]> {
+function fromJsonArray(json: any): FlightVector {
+    return {
+        icao24: json[0],
+        callsign: json[1],
+        origin_country: json[2],
+        time_position: json[3],
+        last_contact: json[4],
+        longitude: json[5],
+        latitude: json[6],
+        baro_altitude: json[7],
+        on_ground: json[8],
+        velocity: json[9],
+        true_track: json[10],
+
+        //Vertical rate in m/s. 
+        vertical_rate: json[11],
+        sensors: json[12],
+        geo_altitude: json[13],
+        squawk: json[14],
+        spi: json[15],
+        position_source: json[16],
+    }
+}
+
+export function loadData(config: Config): Observable<FlightVector[]> {
     const fetchApiData = defer(() => {
         const url = config.testing ? "http://localhost:3000/flight.json" : "https://opensky-network.org/api/states/all"
         const promise = fetch(url)
             .then(r => r.json())
+            .then(json => json.states.map(fromJsonArray))
 
         return from(promise)
     })
@@ -46,7 +69,7 @@ export function lift(data: FlightVector[]): Observable<FlightVector> {
     return from(data)
 }
 
-export function topCountry(data: Observable<FlightVector[]>): Observable<string[]> {
+export function topCountries(data: Observable<FlightVector[]>): Observable<string[]> {
     return data.pipe(
         map(topThreeCountries)
     )
@@ -54,6 +77,8 @@ export function topCountry(data: Observable<FlightVector[]>): Observable<string[
 
 //optimize this operation
 function topThreeCountries(xs: FlightVector[]): string[] {
+    console.log(xs)
+
     const map = Seq(xs).groupBy(s => s.origin_country)
     const seq = map.mapEntries(([k, v]) => [k, v.size ?? 0])
         .toKeyedSeq()
@@ -63,7 +88,6 @@ function topThreeCountries(xs: FlightVector[]): string[] {
         .take(3)
         .toArray()
         .map(([s, _]) => s)
-
 }
 
 function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
@@ -84,11 +108,11 @@ function flightsInSlices(xs: FlightVector[]) {
 }
 
 
-function hasWarning(config: Config, altitudeSlice: number, f: FlightVector):boolean {
+function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
     const secondsUntilNextPoll = config.pollingInterval / 1000
     if (f.baro_altitude) {
         const expectedAltitude = f.baro_altitude + (f.vertical_rate * secondsUntilNextPoll)
-        return expectedAltitude < altitudeSlice * 1000  || expectedAltitude > (altitudeSlice + 1) * 1000
+        return expectedAltitude < altitudeSlice * 1000 || expectedAltitude > (altitudeSlice + 1) * 1000
     } else {
         return false
     }
