@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import {lift , FlightVector } from "../app/Batch"
+import {lift , FlightVector, altitudeToSlice } from "@/app/Batch"
 import { TestScheduler } from 'rxjs/testing';
 import { Observable, firstValueFrom } from 'rxjs';
 
@@ -41,10 +41,20 @@ export const data: FlightVector[] = [
 
 
 
-describe('sum module', () => {
+describe('batch mode', () => {
     const obs = lift(data)
-        test('adds 1 + 2 to equal 3', async () => {
+        test('async test', async () => {
             const flightOne = await firstValueFrom(obs) 
             expect(flightOne.callsign).toBe("LAN580  ");
-        });
+        })
+
+        test('altitudeToSlice', () => {
+            expect(altitudeToSlice(12000)).toBe(12)
+        })
+
+        test('altitudeToSliceFloating', () => {
+            expect(altitudeToSlice(12123.156)).toBe(12)
+        })
+
+
 });

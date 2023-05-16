@@ -1,8 +1,9 @@
-import { Seq } from 'immutable';
+import { List, Seq } from 'immutable';
 import { EMPTY, Observable, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
 import { Config, convertToHourlyRate } from './Config';
 import { dateFromTimeStamp } from './TimeWindows';
 import { date } from 'superstruct';
+import { Alice } from 'next/font/google';
 
 export interface FlightVector {
     icao24: string
@@ -16,6 +17,7 @@ export interface FlightVector {
     on_ground: boolean
     velocity?: number
     true_track: number
+    //Vertical rate in m/s. 
     vertical_rate: number
     sensors?: number[]
     geo_altitude?: number
@@ -70,6 +72,30 @@ function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> 
         count(),
         map(c => convertToHourlyRate(config, c))
     )
+}
+
+
+function flightsInSlices(xs: FlightVector[]) {
+    return List(xs)
+        //put unkown flights in a negative bucket
+        .groupBy(f => altitudeToSlice(f.baro_altitude ?? -1))
+        //remove that bucket
+        .delete(-1)
+}
+
+
+function hasWarning(config: Config, altitudeSlice: number, f: FlightVector):boolean {
+    const secondsUntilNextPoll = config.pollingInterval / 1000
+    if (f.baro_altitude) {
+        const expectedAltitude = f.baro_altitude + (f.vertical_rate * secondsUntilNextPoll)
+        return expectedAltitude < altitudeSlice * 1000  || expectedAltitude > (altitudeSlice + 1) * 1000
+    } else {
+        return false
+    }
+}
+
+export function altitudeToSlice(altitude: number) {
+    return Math.floor(altitude / 1000)
 }
 
 
