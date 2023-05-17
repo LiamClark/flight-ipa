@@ -7,6 +7,7 @@ import { Config } from './Config';
 import { loadData as bload, scanOccurenceMap, topCountries } from './Batch'
 import { Observable, map } from 'rxjs';
 import { Map } from 'immutable'
+import { GeoLocationRequest, inNetherlands } from './api/logic';
 
 const config: Config = {
     testing: true,
