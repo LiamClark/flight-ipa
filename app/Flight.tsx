@@ -4,17 +4,31 @@ import { useState, useEffect } from 'react';
 import { Card } from 'react-bootstrap';
 import { Config } from './Config';
 
-import { loadData as bload, topCountries } from './Batch'
-
+import { loadData as bload, scanOccurenceMap, topCountries } from './Batch'
+import { Observable, map } from 'rxjs';
+import { Map } from 'immutable'
 
 const config: Config = {
     testing: true,
     pollingInterval: 5000
 }
 
-function loadData() {
-    return topCountries(bload(config))
+function loadData(): Observable<string[]> {
+    return bload(config)
+        .pipe(
+            scanOccurenceMap(),
+            map(topThree)
+        )
+}
 
+function topThree(m: Map<string,number>): string[] {
+    const seq = m.toKeyedSeq()
+
+    return seq.sortBy((v, k) => v)
+        .reverse()
+        .take(3)
+        .toArray()
+        .map(([s, _]) => s)
 }
 
 export default function Flight() {
@@ -25,7 +39,6 @@ export default function Flight() {
         const sub = loadData()
             .subscribe(countries => { 
                     setData(countries)
-                    console.log(countries)
             })
 
         //cleanup

@@ -1,5 +1,5 @@
-import { List, Seq } from 'immutable';
-import { EMPTY, Observable, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
+import { List, Map, Seq } from 'immutable';
+import { EMPTY, Observable, OperatorFunction, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
 import { Config, convertToHourlyRate } from './Config';
 import { dateFromTimeStamp } from './TimeWindows';
 
@@ -77,8 +77,6 @@ export function topCountries(data: Observable<FlightVector[]>): Observable<strin
 
 //optimize this operation
 function topThreeCountries(xs: FlightVector[]): string[] {
-    console.log(xs)
-
     const map = Seq(xs).groupBy(s => s.origin_country)
     const seq = map.mapEntries(([k, v]) => [k, v.size ?? 0])
         .toKeyedSeq()
@@ -89,6 +87,23 @@ function topThreeCountries(xs: FlightVector[]): string[] {
         .toArray()
         .map(([s, _]) => s)
 }
+
+function groupCountries(xs: FlightVector[]): Map<string, number> {
+    const map = Seq(xs).groupBy(s => s.origin_country)
+    const rest: Map<string, number> = map.mapEntries(([k, v]) => [k, v.size ?? 0])
+    return rest
+}
+
+//This implementation is still faulty.
+// Because it will count flights I have seen before.
+export function scanOccurenceMap(): OperatorFunction<FlightVector[], Map<string, number>> {
+    const seed: Map<string, number> = Map()
+    return scan((acc, v) => {
+        return acc.mergeWith((a, b) => a + b, groupCountries(v))
+    }, seed)
+
+}
+
 
 function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
     return from(xs).pipe(
