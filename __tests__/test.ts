@@ -1,10 +1,12 @@
 import { describe, expect, test } from '@jest/globals';
-import {lift , FlightVector, altitudeToSlice } from "@/app/Batch"
+import { altitudeToSlice } from "@/app/Batch"
 import { TestScheduler } from 'rxjs/testing';
-import { Observable, firstValueFrom } from 'rxjs';
+import { from , firstValueFrom } from 'rxjs';
+import { FlightVectorRaw } from '@/app/api/data-definition';
 
 
-export const data: FlightVector[] = [
+
+export const data: FlightVectorRaw[] = [
     {
         icao24: "e8027b",
         callsign: "LAN580  ",
@@ -18,6 +20,9 @@ export const data: FlightVector[] = [
         velocity: 230.61,
         true_track: 345,
         vertical_rate: 0,
+        sensors: null,
+        geo_altitude: null,
+        squawk: null,
         spi: false,
         position_source: 0,
     },
@@ -34,6 +39,9 @@ export const data: FlightVector[] = [
         velocity: 150.16,
         true_track: 257.54,
         vertical_rate: 0.33,
+        sensors: null,
+        geo_altitude: null,
+        squawk: null,
         spi: false,
         position_source: 0,
     },
@@ -42,7 +50,7 @@ export const data: FlightVector[] = [
 
 
 describe('batch mode', () => {
-    const obs = lift(data)
+    const obs = from(data)
         test('async test', async () => {
             const flightOne = await firstValueFrom(obs) 
             expect(flightOne.callsign).toBe("LAN580  ");

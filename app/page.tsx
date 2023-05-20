@@ -1,14 +1,15 @@
 'use client'
 
-import Flight from './Flight'
+import Origin from './Origin'
 import { Disclosure, Menu } from '@headlessui/react'
 import { BellIcon } from '@heroicons/react/24/outline'
 import 'bootstrap/dist/css/bootstrap.css'
 import Hour from './Hour'
 import { BehaviorSubject, Observable, share, tap } from 'rxjs'
-import { FlightVector, loadData } from './Batch'
+import { loadData } from './Batch'
 import { Config } from './Config'
 import FlightLayers from './FlightLayers'
+import { FlightVectorRaw } from './api/data-definition'
 
 const user = {
   imageUrl:
@@ -17,17 +18,18 @@ const user = {
 
 const config: Config = {
   testing: true,
-  pollingInterval: 5000
+  pollingInterval: 5000,
+  geoFilterUrl: "http://localhost:3000/api"
 }
 
 // For today let's make a hot observable, pass it down as props.
 // Then subscribe to it in a useEffect hook, since the observable
 // depends on no reactive values no re-renders should occur
-function multiCastedFlights(): Observable<FlightVector[]> {
+function multiCastedFlights(): Observable<FlightVectorRaw[]> {
   return loadData(config)
     .pipe(
       tap(m => console.log("fetching event")),
-      share({ connector: () => new BehaviorSubject([] as FlightVector[]) })
+      share({ connector: () => new BehaviorSubject([] as FlightVectorRaw[]) })
     )
 }
 
@@ -87,7 +89,7 @@ export default function Example() {
         <main>
           <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
             <div className='flex flex-row flex-wrap space-x-4'>
-              <Flight flightData={flightData} />
+              <Origin flightData={flightData} />
               <Hour config={config} flightData={flightData} />
               <FlightLayers flightData={flightData}/>
             </div>

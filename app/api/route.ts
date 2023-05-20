@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { GeoLocationRequest, inNetherlands } from './logic';
+import { inNetherlands } from './logic';
+import { assert } from 'superstruct';
+import { GeoLocationRequestsSchema } from './data-definition';
 
 //ok so this is the component to do reverse geo location
 // I've gotten a package for this, I know I want to do this on the server
@@ -28,20 +30,17 @@ test data:
     ]
 
 */
+// Wzz5183
 export async function POST(request: Request) {
     const json = await request.json()
-    const requests: [GeoLocationRequest] = json
+    assert(json, GeoLocationRequestsSchema)
 
-
-    const located = requests.map(m => {
+    const located = json.flights.map(m => {
         return {
             callsign: m.callsign,
             inNetherlands: inNetherlands(m)
             // inNetherlands: true
         }
     })
-
-
-    // return NextResponse.json({ hi: "hello" })
     return NextResponse.json({ flights: located })
 }

@@ -5,25 +5,17 @@ import {polygon, multiPolygon, Point, Feature} from '@turf/helpers';
 import {extractCountryInfoFromCountryFeature} from "country-locator/dist/common/utils/countries-geojson-utils";
 import jsonFile from "jsonfile";
 import { CountriesGeoJson } from "country-locator/dist/types";
+import { GeoLocationRequest } from "./data-definition";
 
-
-export interface GeoLocationRequest {
-    callsign: string
-    longitude: number
-    latitude: number
-}
 
 const geo = jsonFile.readFileSync("netherlands.json") as CountriesGeoJson;
 
 export function inNetherlands(r: GeoLocationRequest): boolean {
 
     // return true
-    return (findCountryByCoordinate(r.longitude, r.latitude)?.code ?? "") === "NLD"
+    return (findCountryByCoordinate(r.latitude, r.longitude)?.code ?? "") === "NLD"
 }
 
-export function boo(json: any): GeoLocationRequest[] {
-    return json
-}
 
 /**
  * Determines if a given point is in a territory of a country or not

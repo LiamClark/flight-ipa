@@ -1,31 +1,12 @@
 import { List, Map, Seq } from 'immutable';
 import { EMPTY, Observable, OperatorFunction, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
 import { Config, convertToHourlyRate } from './Config';
+import { is, assert } from 'superstruct'
 import { dateFromTimeStamp } from './TimeWindows';
+import { FlightVector, FlightVectorRaw, FlightVectorRawSchema, GeoLocationRequest, GeoLocationRequestsSchema, GeoLocationResponse, GeoLocationResponsesSchema } from './api/data-definition';
 
-export interface FlightVector {
-    icao24: string
-    callsign: string
-    origin_country: string
-    time_position: number
-    last_contact: number
-    longitude?: number
-    latitude?: number
-    baro_altitude?: number
-    on_ground: boolean
-    velocity?: number
-    true_track: number
-    //Vertical rate in m/s. 
-    vertical_rate: number
-    sensors?: number[]
-    geo_altitude?: number
-    squawk?: string
-    spi: boolean
-    position_source: number
-}
-
-function fromJsonArray(json: any): FlightVector {
-    return {
+function fromJsonArray(json: any): FlightVectorRaw {
+    const rawFlightData = {
         icao24: json[0],
         callsign: json[1],
         origin_country: json[2],
@@ -46,14 +27,23 @@ function fromJsonArray(json: any): FlightVector {
         spi: json[15],
         position_source: json[16],
     }
+
+    return rawFlightData
 }
 
-export function loadData(config: Config): Observable<FlightVector[]> {
+export function loadData(config: Config): Observable<FlightVectorRaw[]> {
     const fetchApiData = defer(() => {
         const url = config.testing ? "http://localhost:3000/flight.json" : "https://opensky-network.org/api/states/all"
         const promise = fetch(url)
             .then(r => r.json())
-            .then(json => json.states.map(fromJsonArray))
+            .then(json => {
+                const flights: any[] = json.states.map(fromJsonArray);
+                const validatedFlights = flights.filter((v): v is FlightVectorRaw => {
+                    // assert(v, FlightVectorRawSchema)
+                    return is(v, FlightVectorRawSchema);
+                });
+                return validatedFlights
+            })
 
         return from(promise)
     })
@@ -65,18 +55,14 @@ export function loadData(config: Config): Observable<FlightVector[]> {
         .pipe(mergeMap(_ => fetchApiData))
 }
 
-export function lift(data: FlightVector[]): Observable<FlightVector> {
-    return from(data)
-}
-
-export function topCountries(data: Observable<FlightVector[]>): Observable<string[]> {
+export function topCountries(data: Observable<FlightVectorRaw[]>): Observable<string[]> {
     return data.pipe(
         map(topThreeCountries)
     )
 }
 
 //optimize this operation
-function topThreeCountries(xs: FlightVector[]): string[] {
+function topThreeCountries(xs: FlightVectorRaw[]): string[] {
     const map = Seq(xs).groupBy(s => s.origin_country)
     const seq = map.mapEntries(([k, v]) => [k, v.size ?? 0])
         .toKeyedSeq()
@@ -88,7 +74,7 @@ function topThreeCountries(xs: FlightVector[]): string[] {
         .map(([s, _]) => s)
 }
 
-function groupCountries(xs: FlightVector[]): Map<string, number> {
+function groupCountries(xs: FlightVectorRaw[]): Map<string, number> {
     const map = Seq(xs).groupBy(s => s.origin_country)
     const rest: Map<string, number> = map.mapEntries(([k, v]) => [k, v.size ?? 0])
     return rest
@@ -96,7 +82,7 @@ function groupCountries(xs: FlightVector[]): Map<string, number> {
 
 //This implementation is still faulty.
 // Because it will count flights I have seen before.
-export function scanOccurenceMap(): OperatorFunction<FlightVector[], Map<string, number>> {
+export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], Map<string, number>> {
     const seed: Map<string, number> = Map()
     return scan((acc, v) => {
         return acc.mergeWith((a, b) => a + b, groupCountries(v))
@@ -104,12 +90,61 @@ export function scanOccurenceMap(): OperatorFunction<FlightVector[], Map<string,
 
 }
 
-export function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
-    return from(xs).pipe(
-        mergeMap(filterGeoLocation),
-        count(),
+//Oke time to redesign this, I will make it work with the api in batch mode
+export function flightsPerHour(
+    config: Config,
+    xs: FlightVector[],
+    geoFilter: (fs: FlightVector[]) => Observable<FlightVector[]>
+): Observable<Number> {
+    return geoFilter(xs).pipe(
+        map(xs => xs.length),
         map(c => convertToHourlyRate(config, c))
     )
+}
+
+
+export function geoFilter(config: Config, fs: FlightVector[]): Observable<FlightVector[]> {
+    if (fs.length == 0) {
+        return of([])
+    }
+    const requests: GeoLocationRequest[] = fs.map(f => ({ callsign: f.callsign, longitude: f.longitude, latitude: f.latitude }))
+    return defer(() =>
+        from(
+            fetch(config.geoFilterUrl, {
+                method: "POST",
+                body: JSON.stringify({ flights: requests })
+            }).then(r => r.json())
+                .then(r => {
+                    try {
+                        assert(r, GeoLocationResponsesSchema)
+                    } catch (e: any) {
+                        debugger
+                    }
+                    return r
+                })
+        ).pipe(
+            map(res => filterZip(fs, res.flights))
+        )
+    )
+}
+
+function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVector[] {
+    if (fs.length != resps.length) {
+        throw new Error("request and response arrays differ in length")
+    }
+    const newFs: FlightVector[] = []
+    for (let i = 0; i < fs.length; i++) {
+        const f = fs[i]
+        const r = resps[i]
+        if (f.callsign != r.callsign) {
+            throw new Error("Api changed the order of requests")
+        }
+        if (r.inNetherlands) {
+            newFs.push(f)
+        }
+    }
+
+    return newFs
 }
 
 function flightsInSlices(xs: FlightVector[]) {
@@ -187,26 +222,3 @@ interface Position {
     longitude: number
 }
 
-function filterGeoLocation(f: FlightVector): Observable<FlightVector> {
-    if (f.latitude && f.longitude) {
-        const position = {
-            latitude: f.latitude,
-            longitude: f.longitude
-        }
-
-        return mockGeoLocation(position)
-            .pipe(
-                filter(b => b),
-                map(_ => f)
-            )
-    }
-
-    return EMPTY
-}
-
-// I can have a source observable for this but that does not help with state
-// across invocations to the function. A.k.a. the boundary of the randomness is not in this function
-// for today let's just put in a random value which I hope doesn't cause problems with the runtime 
-function mockGeoLocation(p: Position): Observable<boolean> {
-    return of(Math.random() < 0.5)
-}
