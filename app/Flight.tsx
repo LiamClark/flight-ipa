@@ -4,22 +4,9 @@ import { useState, useEffect } from 'react';
 import { Card } from 'react-bootstrap';
 import { Config } from './Config';
 
-import { loadData as bload, scanOccurenceMap } from './Batch'
+import { FlightVector, loadData as bload, scanOccurenceMap } from './Batch'
 import { Observable, map } from 'rxjs';
 import { Map } from 'immutable'
-
-const config: Config = {
-    testing: true,
-    pollingInterval: 5000
-}
-
-function loadData(): Observable<string[]> {
-    return bload(config)
-        .pipe(
-            scanOccurenceMap(),
-            map(topThree)
-        )
-}
 
 function topThree(m: Map<string, number>): string[] {
     const seq = m.toKeyedSeq()
@@ -31,12 +18,15 @@ function topThree(m: Map<string, number>): string[] {
         .map(([s, _]) => s)
 }
 
-export default function Flight() {
-    const empty: string[] = []
-    const [data, setData] = useState(empty);
+export default function Flight(props: {flightData: Observable<FlightVector[]>}) {
+    const [data, setData] = useState([] as string[]);
 
     useEffect(() => {
-        const sub = loadData()
+        const sub = props.flightData
+            .pipe(
+                scanOccurenceMap(),
+                map(topThree)
+            )
             .subscribe(countries => {
                 setData(countries)
             })
@@ -44,7 +34,7 @@ export default function Flight() {
         //cleanup
         return () => { sub.unsubscribe() }
 
-    }, [data, setData])
+    }, [setData])
 
     const countryItems = data.map((country, i) =>
         <li key={i.toString()}>

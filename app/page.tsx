@@ -1,19 +1,40 @@
 'use client'
 
-import Image from 'next/image'
 import Flight from './Flight'
 import { Disclosure, Menu } from '@headlessui/react'
 import { BellIcon } from '@heroicons/react/24/outline'
-import 'bootstrap/dist/css/bootstrap.css' 
-import { Card } from 'react-bootstrap'
+import 'bootstrap/dist/css/bootstrap.css'
 import Hour from './Hour'
+import { BehaviorSubject, Observable, share, tap } from 'rxjs'
+import { FlightVector, loadData } from './Batch'
+import { Config } from './Config'
+import FlightLayers from './FlightLayers'
 
 const user = {
   imageUrl:
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
 }
 
+const config: Config = {
+  testing: true,
+  pollingInterval: 5000
+}
+
+// For today let's make a hot observable, pass it down as props.
+// Then subscribe to it in a useEffect hook, since the observable
+// depends on no reactive values no re-renders should occur
+function multiCastedFlights(): Observable<FlightVector[]> {
+  return loadData(config)
+    .pipe(
+      tap(m => console.log("fetching event")),
+      share({ connector: () => new BehaviorSubject([] as FlightVector[]) })
+    )
+}
+
 export default function Example() {
+  // Do I need to put multiCastedFlights in an useEffect hook, because it is hot?  
+  const flightData = multiCastedFlights()
+
   return (
     <>
       <div className="min-h-full">
@@ -65,14 +86,11 @@ export default function Example() {
         </header>
         <main>
           <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-              <div className='flex flex-row flex-wrap space-x-4'>
-                  <Flight/>
-                  <Hour/>
-                  <span>hello</span>
-                  <span>goodbye</span>
-              </div>
-
-
+            <div className='flex flex-row flex-wrap space-x-4'>
+              <Flight flightData={flightData} />
+              <Hour config={config} flightData={flightData} />
+              <FlightLayers flightData={flightData}/>
+            </div>
           </div>
         </main>
       </div>

@@ -104,7 +104,7 @@ export function scanOccurenceMap(): OperatorFunction<FlightVector[], Map<string,
 
 }
 
-function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
+export function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
     return from(xs).pipe(
         mergeMap(filterGeoLocation),
         count(),
