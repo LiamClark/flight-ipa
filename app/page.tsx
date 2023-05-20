@@ -16,22 +16,18 @@ const user = {
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
 }
 
-const config: Config = {
-  testing: true,
-  pollingInterval: 5000,
-  geoFilterUrl: "http://localhost:3000/api"
-}
+const config: Config = new Config(true, "http://localhost:3000/api")
 
-// For today let's make a hot observable, pass it down as props.
-// Then subscribe to it in a useEffect hook, since the observable
-// depends on no reactive values no re-renders should occur
-function multiCastedFlights(): Observable<FlightVectorRaw[]> {
-  return loadData(config)
-    .pipe(
-      tap(m => console.log("fetching event")),
-      share({ connector: () => new BehaviorSubject([] as FlightVectorRaw[]) })
-    )
-}
+  // For today let's make a hot observable, pass it down as props.
+  // Then subscribe to it in a useEffect hook, since the observable
+  // depends on no reactive values no re-renders should occur
+  function multiCastedFlights(): Observable<FlightVectorRaw[]> {
+    return loadData(config)
+      .pipe(
+        tap(m => console.log("fetching event")),
+        share({ connector: () => new BehaviorSubject([] as FlightVectorRaw[]) })
+      )
+  }
 
 export default function Example() {
   // Do I need to put multiCastedFlights in an useEffect hook, because it is hot?  
@@ -91,7 +87,7 @@ export default function Example() {
             <div className='flex flex-row flex-wrap space-x-4'>
               <Origin flightData={flightData} />
               <Hour config={config} flightData={flightData} />
-              <FlightLayers flightData={flightData}/>
+              <FlightLayers flightData={flightData} />
             </div>
           </div>
         </main>

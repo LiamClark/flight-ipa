@@ -21,24 +21,14 @@ describe('TimeWindows', () => {
     })
 
 
+    const fiveMinutes = 300000
+    const config: Config = new Config(true, "", fiveMinutes)
     test('hourly rate config', () => {
-        const fiveMinutes = 300000
-        const config: Config = {
-            testing: true,
-            pollingInterval: fiveMinutes,
-            geoFilterUrl: ""
-        }
         const planesPerHour = convertToHourlyRate(config, 30)
         expect(planesPerHour).toBeCloseTo(30 * 12)
     })
 
     test('hourly rate config', () => {
-        const fiveMinutes = 300000
-        const config: Config = {
-            testing: true,
-            pollingInterval: fiveMinutes,
-            geoFilterUrl: ""
-        }
         const pollsPerHour = intervalsInAnHour(config)
         expect(pollsPerHour).toBe(12)
     })

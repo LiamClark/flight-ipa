@@ -51,7 +51,7 @@ export function loadData(config: Config): Observable<FlightVectorRaw[]> {
 
     // This does a conversion from any to FlightVector[]
     // can I add validation to this?
-    return timer(0, config.pollingInterval)
+    return timer(0, config.pollingInterval())
         .pipe(mergeMap(_ => fetchApiData))
 }
 
@@ -162,7 +162,7 @@ function flightsInSlices(xs: FlightVector[]) {
 }
 
 function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
-    const secondsUntilNextPoll = config.pollingInterval / 1000
+    const secondsUntilNextPoll = config.pollingInterval() / 1000
     if (f.baro_altitude) {
         const expectedAltitude = f.baro_altitude + (f.vertical_rate * secondsUntilNextPoll)
         return expectedAltitude < altitudeSlice * 1000 || expectedAltitude > (altitudeSlice + 1) * 1000
