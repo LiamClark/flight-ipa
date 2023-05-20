@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from 'react-bootstrap';
 import { scanOccurenceMap } from './Batch'
-import { Observable, map } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { Map } from 'immutable'
 import { FlightVectorRaw } from './api/data-definition';
 
@@ -17,7 +17,7 @@ function topThree(m: Map<string, number>): string[] {
         .map(([s, _]) => s)
 }
 
-export default function Origin(props: {flightData: Observable<FlightVectorRaw[]>}) {
+export default function Origin(props: { flightData: Observable<FlightVectorRaw[]> }) {
     const [data, setData] = useState([] as string[]);
 
     useEffect(() => {
@@ -49,9 +49,6 @@ export default function Origin(props: {flightData: Observable<FlightVectorRaw[]>
                     {countryItems}
                 </ol>
                 <Card.Text>
-
-
-
                 </Card.Text>
             </Card.Body>
         </Card>

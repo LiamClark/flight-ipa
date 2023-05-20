@@ -1,9 +1,8 @@
 import { describe, expect, test } from '@jest/globals';
 import { altitudeToSlice } from "@/app/Batch"
-import { TestScheduler } from 'rxjs/testing';
-import { from , firstValueFrom } from 'rxjs';
+import { from, firstValueFrom, bufferCount } from 'rxjs';
 import { FlightVectorRaw } from '@/app/api/data-definition';
-
+import { List } from 'immutable';
 
 
 export const data: FlightVectorRaw[] = [
@@ -48,21 +47,47 @@ export const data: FlightVectorRaw[] = [
 ]
 
 
-
 describe('batch mode', () => {
     const obs = from(data)
-        test('async test', async () => {
-            const flightOne = await firstValueFrom(obs) 
-            expect(flightOne.callsign).toBe("LAN580  ");
-        })
+    test('async test', async () => {
+        const flightOne = await firstValueFrom(obs)
+        expect(flightOne.callsign).toBe("LAN580  ");
+    })
 
-        test('altitudeToSlice', () => {
-            expect(altitudeToSlice(12000)).toBe(12)
-        })
+    test('altitudeToSlice', () => {
+        expect(altitudeToSlice(12000)).toBe(12)
+    })
 
-        test('altitudeToSliceFloating', () => {
-            expect(altitudeToSlice(12123.156)).toBe(12)
-        })
+    test('altitudeToSliceFloating', () => {
+        expect(altitudeToSlice(12123.156)).toBe(12)
+    })
 
+    test('list buffer',() => {
+        const buf = List([1,2,3,4,5,6])
+        expect(buf.remove(0).push(7)).toStrictEqual(List([2,3,4,5,6,7]))
+    })
 
+    test('buffer windows', done => {
+
+        let index = 0
+        const results = [
+            [1, 2, 3],
+            [2, 3, 4],
+            [3, 4, 5],
+            [4, 5, 6]
+        ]
+        from([1, 2, 3, 4, 5, 6])
+            .pipe(
+                bufferCount(3, 1)
+            ).subscribe(m => {
+                if (index <= 3) {
+                    expect(m).toEqual(results[index])
+                    index++
+                    if (index == 3) {
+                        done()
+                        index++
+                    }
+                }
+            })
+    })
 });

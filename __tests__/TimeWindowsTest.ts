@@ -1,6 +1,6 @@
 import { currentHour, dateFromTimeStamp } from "@/app/TimeWindows";
 import { data } from "./test";
-import { Config, convertToHourlyRate } from "@/app/Config"
+import { Config, convertToHourlyRate, intervalsInAnHour } from "@/app/Config"
 
 
 describe('TimeWindows', () => {
@@ -25,9 +25,21 @@ describe('TimeWindows', () => {
         const fiveMinutes = 300000
         const config: Config = {
             testing: true,
-            pollingInterval: fiveMinutes
+            pollingInterval: fiveMinutes,
+            geoFilterUrl: ""
         }
         const planesPerHour = convertToHourlyRate(config, 30)
         expect(planesPerHour).toBeCloseTo(30 * 12)
+    })
+
+    test('hourly rate config', () => {
+        const fiveMinutes = 300000
+        const config: Config = {
+            testing: true,
+            pollingInterval: fiveMinutes,
+            geoFilterUrl: ""
+        }
+        const pollsPerHour = intervalsInAnHour(config)
+        expect(pollsPerHour).toBe(12)
     })
 });

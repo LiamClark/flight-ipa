@@ -7,6 +7,10 @@ export interface Config {
 
 }
 
+export function intervalsInAnHour(config: Config) {
+    const factorToHour = 3_600_000 / config.pollingInterval
+    return Math.floor(factorToHour)
+}
 
 export function convertToHourlyRate(config: Config, n: number) {
     const factorToHour = 3_600_000 / config.pollingInterval

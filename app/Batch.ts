@@ -1,6 +1,6 @@
 import { List, Map, Seq } from 'immutable';
-import { EMPTY, Observable, OperatorFunction, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
-import { Config, convertToHourlyRate } from './Config';
+import { EMPTY, Observable, OperatorFunction, bufferCount, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
+import { Config, convertToHourlyRate, intervalsInAnHour } from './Config';
 import { is, assert } from 'superstruct'
 import { dateFromTimeStamp } from './TimeWindows';
 import { FlightVector, FlightVectorRaw, FlightVectorRawSchema, GeoLocationRequest, GeoLocationRequestsSchema, GeoLocationResponse, GeoLocationResponsesSchema } from './api/data-definition';
@@ -84,24 +84,12 @@ function groupCountries(xs: FlightVectorRaw[]): Map<string, number> {
 // Because it will count flights I have seen before.
 export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], Map<string, number>> {
     const seed: Map<string, number> = Map()
+    debugger
     return scan((acc, v) => {
         return acc.mergeWith((a, b) => a + b, groupCountries(v))
     }, seed)
 
 }
-
-//Oke time to redesign this, I will make it work with the api in batch mode
-export function flightsPerHour(
-    config: Config,
-    xs: FlightVector[],
-    geoFilter: (fs: FlightVector[]) => Observable<FlightVector[]>
-): Observable<Number> {
-    return geoFilter(xs).pipe(
-        map(xs => xs.length),
-        map(c => convertToHourlyRate(config, c))
-    )
-}
-
 
 export function geoFilter(config: Config, fs: FlightVector[]): Observable<FlightVector[]> {
     if (fs.length == 0) {
@@ -126,6 +114,17 @@ export function geoFilter(config: Config, fs: FlightVector[]): Observable<Flight
             map(res => filterZip(fs, res.flights))
         )
     )
+}
+
+export function slidingWindows<X>(size: number): OperatorFunction<X, List<X>> {
+    const seed: List<X> = List()
+    return scan((acc, x) => {
+        if (acc.size == size) {
+            return acc.remove(0).push(x)
+        } else {
+            return acc.push(x)
+        }
+    }, seed)
 }
 
 function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVector[] {
