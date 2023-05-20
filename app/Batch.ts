@@ -1,4 +1,4 @@
-import { List, Map, Seq } from 'immutable';
+import { List, Map, Seq, Set } from 'immutable';
 import { EMPTY, Observable, OperatorFunction, bufferCount, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
 import { Config, convertToHourlyRate, intervalsInAnHour } from './Config';
 import { is, assert } from 'superstruct'
@@ -80,14 +80,21 @@ function groupCountries(xs: FlightVectorRaw[]): Map<string, number> {
     return rest
 }
 
+type OriginState = [Map<string, number>, Set<String>]
+
 //This implementation is still faulty.
 // Because it will count flights I have seen before.
-export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], Map<string, number>> {
-    const seed: Map<string, number> = Map()
-    debugger
-    return scan((acc, v) => {
-        return acc.mergeWith((a, b) => a + b, groupCountries(v))
-    }, seed)
+export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], OriginState> {
+    const flightCountsSeed: Map<string, number> = Map()
+    const knownFlightsSeed: Set<string> = Set()
+
+    return scan(([flightCounts, knownFlights], fs) => {
+        const newFlights = fs.filter(fs => !knownFlights.has(fs.callsign))
+        const newFlightCounts = flightCounts.mergeWith((a, b) => a + b, groupCountries(newFlights))
+        const newKnownFlights = newFlights.reduce((a,b) => a.add(b.callsign) , knownFlights)
+
+        return [newFlightCounts, newKnownFlights]
+    }, [flightCountsSeed, knownFlightsSeed])
 
 }
 
