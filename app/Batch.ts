@@ -1,5 +1,5 @@
 import { List, Map, Seq } from 'immutable';
-import { EMPTY, Observable, OperatorFunction, count, defer, filter, from, interval, map, mergeMap, of, repeat, scan } from 'rxjs';
+import { EMPTY, Observable, OperatorFunction, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
 import { Config, convertToHourlyRate } from './Config';
 import { dateFromTimeStamp } from './TimeWindows';
 
@@ -61,7 +61,7 @@ export function loadData(config: Config): Observable<FlightVector[]> {
 
     // This does a conversion from any to FlightVector[]
     // can I add validation to this?
-    return interval(config.pollingInterval)
+    return timer(0, config.pollingInterval)
         .pipe(mergeMap(_ => fetchApiData))
 }
 
