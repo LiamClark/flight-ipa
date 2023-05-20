@@ -104,7 +104,6 @@ export function scanOccurenceMap(): OperatorFunction<FlightVector[], Map<string,
 
 }
 
-
 function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> {
     return from(xs).pipe(
         mergeMap(filterGeoLocation),
@@ -113,7 +112,6 @@ function flightsPerHour(config: Config, xs: FlightVector[]): Observable<Number> 
     )
 }
 
-
 function flightsInSlices(xs: FlightVector[]) {
     return List(xs)
         //put unkown flights in a negative bucket
@@ -121,7 +119,6 @@ function flightsInSlices(xs: FlightVector[]) {
         //remove that bucket
         .delete(-1)
 }
-
 
 function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
     const secondsUntilNextPoll = config.pollingInterval / 1000

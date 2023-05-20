@@ -6,6 +6,7 @@ import { Disclosure, Menu } from '@headlessui/react'
 import { BellIcon } from '@heroicons/react/24/outline'
 import 'bootstrap/dist/css/bootstrap.css' 
 import { Card } from 'react-bootstrap'
+import Hour from './Hour'
 
 const user = {
   imageUrl:
@@ -66,6 +67,7 @@ export default function Example() {
           <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
               <div className='flex flex-row flex-wrap space-x-4'>
                   <Flight/>
+                  <Hour/>
                   <span>hello</span>
                   <span>goodbye</span>
               </div>

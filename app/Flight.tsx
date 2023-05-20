@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { Card } from 'react-bootstrap';
 import { Config } from './Config';
 
-import { loadData as bload, scanOccurenceMap, topCountries } from './Batch'
+import { loadData as bload, scanOccurenceMap } from './Batch'
 import { Observable, map } from 'rxjs';
 import { Map } from 'immutable'
-import { GeoLocationRequest, inNetherlands } from './api/logic';
 
 const config: Config = {
     testing: true,
@@ -22,7 +21,7 @@ function loadData(): Observable<string[]> {
         )
 }
 
-function topThree(m: Map<string,number>): string[] {
+function topThree(m: Map<string, number>): string[] {
     const seq = m.toKeyedSeq()
 
     return seq.sortBy((v, k) => v)
@@ -38,8 +37,8 @@ export default function Flight() {
 
     useEffect(() => {
         const sub = loadData()
-            .subscribe(countries => { 
-                    setData(countries)
+            .subscribe(countries => {
+                setData(countries)
             })
 
         //cleanup
@@ -47,7 +46,7 @@ export default function Flight() {
 
     }, [data, setData])
 
-    const countryItems = data.map((country, i) => 
+    const countryItems = data.map((country, i) =>
         <li key={i.toString()}>
             {country}
         </li>
@@ -57,9 +56,9 @@ export default function Flight() {
         <Card>
             <Card.Header>Most popular origin countries</Card.Header>
             <Card.Body>
-                    <ol>
-                        {countryItems}
-                    </ol>
+                <ol>
+                    {countryItems}
+                </ol>
                 <Card.Text>
 
 
