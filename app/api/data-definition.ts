@@ -1,4 +1,4 @@
-import { assert, object, number, string, array, Infer, nullable, boolean } from 'superstruct'
+import { assert, object, number, string, array, Infer, nullable, boolean, nonempty } from 'superstruct'
 
 export type GeoLocationRequest = Infer<typeof GeoLocationRequestSchema>
 
@@ -32,7 +32,7 @@ export type FlightVectorRaw = Infer<typeof FlightVectorRawSchema>
 
 export const FlightVectorRawSchema = object({
     icao24: string(),
-    callsign: string(),
+    callsign: nonempty(string()),
     origin_country: string(),
     time_position: nullable(number()),
     last_contact: number(),
