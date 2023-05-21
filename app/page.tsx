@@ -87,7 +87,7 @@ export default function Example() {
             <div className='flex flex-row flex-wrap space-x-4'>
               <Origin flightData={flightData} />
               <Hour config={config} flightData={flightData} />
-              <FlightLayers flightData={flightData} />
+              <FlightLayers config={config} flightData={flightData} />
             </div>
           </div>
         </main>
