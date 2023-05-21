@@ -151,3 +151,24 @@ export type DiffState = {
     removed: Set<string>
 }
 
+export function newOld(xs: Observable<FlightVector[]>): Observable<DiffState> {
+    const seed: DiffState = {
+        all: Set(),
+        newItems: Set(),
+        removed: Set()
+    }
+    return xs.pipe(
+        map(xs => Set(xs.map(x => x.callsign))),
+        scan((acc, xs) => {
+            const all = acc.all
+            const newItems = xs.subtract(all)
+            const removed = all.subtract(xs)
+
+            return { all: xs, newItems: newItems, removed: removed }
+        }, seed),
+        // This removes the first entry where every flight is considered "new"
+        // I'd rather use the overload of scan to take the first value from the emission as a seed
+        // However pattern matching on a value of type Set<string> | DiffState is nasty.
+        skip(1)
+    )
+}

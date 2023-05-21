@@ -3,31 +3,32 @@
 import Origin from './Origin'
 import { Disclosure, Menu } from '@headlessui/react'
 import { BellIcon } from '@heroicons/react/24/outline'
-import 'bootstrap/dist/css/bootstrap.css'
 import Hour from './Hour'
-import { BehaviorSubject, Observable, share, tap } from 'rxjs'
+import { BehaviorSubject, Observable, filter, share, tap } from 'rxjs'
 import { loadData } from './Batch'
 import { Config } from './Config'
 import FlightLayers from './FlightLayers'
 import { FlightVectorRaw } from './api/data-definition'
+import FlightDiff from './FlightDiff'
 
 const user = {
   imageUrl:
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
 }
 
-const config: Config = new Config(true, "http://localhost:3000/api")
+const config: Config = new Config(false, "http://localhost:3000/api")
 
-  // For today let's make a hot observable, pass it down as props.
-  // Then subscribe to it in a useEffect hook, since the observable
-  // depends on no reactive values no re-renders should occur
-  function multiCastedFlights(): Observable<FlightVectorRaw[]> {
-    return loadData(config)
-      .pipe(
-        tap(m => console.log("fetching event")),
-        share({ connector: () => new BehaviorSubject([] as FlightVectorRaw[]) })
-      )
-  }
+// For today let's make a hot observable, pass it down as props.
+// Then subscribe to it in a useEffect hook, since the observable
+// depends on no reactive values no re-renders should occur
+function multiCastedFlights(): Observable<FlightVectorRaw[]> {
+  return loadData(config)
+    .pipe(
+      tap(m => console.log("fetching event")),
+      share({ connector: () => new BehaviorSubject([] as FlightVectorRaw[]) }),
+      filter(xs => xs.length != 0)
+    )
+}
 
 export default function Example() {
   // Do I need to put multiCastedFlights in an useEffect hook, because it is hot?  
@@ -59,16 +60,6 @@ export default function Example() {
                         <span className="sr-only">View notifications</span>
                         <BellIcon className="h-6 w-6" aria-hidden="true" />
                       </button>
-
-                      {/* Profile dropdown */}
-                      <Menu as="div" className="relative ml-3">
-                        <div>
-                          <Menu.Button className="flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
-                            <span className="sr-only">Open user menu</span>
-                            <img className="h-8 w-8 rounded-full" src={user.imageUrl} alt="" />
-                          </Menu.Button>
-                        </div>
-                      </Menu>
                     </div>
                   </div>
                 </div>
@@ -82,13 +73,19 @@ export default function Example() {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
           </div>
         </header>
-        <main>
+        <main className='bg-white'>
           <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-            <div className='flex flex-row flex-wrap space-x-4'>
+            <div className='flex flex-row flex-wrap space-x-4' style={{ justifyContent: 'space-around' }} >
               <Origin flightData={flightData} />
               <Hour config={config} flightData={flightData} />
-              <FlightLayers config={config} flightData={flightData} />
+              <FlightDiff flightData={flightData} />
             </div>
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-gray-400"></div>
+              <span className="flex-shrink mx-4 text-gray-400">Flights per km</span>
+              <div className="flex-grow border-t border-gray-400"></div>
+            </div>
+            <FlightLayers config={config} flightData={flightData} />
           </div>
         </main>
       </div>
