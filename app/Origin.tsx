@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Card } from 'react-bootstrap';
 import { scanOccurenceMap } from './Batch'
 import { Observable, map, tap } from 'rxjs';
 import { Map } from 'immutable'
 import { FlightVectorRaw } from './api/data-definition';
+import { Card, CardBody, List, ListItem, Typography } from '@material-tailwind/react';
 
 function topThree(m: Map<string, number>): [string, number][] {
     const seq = m.toKeyedSeq()
@@ -13,7 +13,6 @@ function topThree(m: Map<string, number>): [string, number][] {
         .reverse()
         .take(3)
         .toArray()
-    // .map(([s, k]) => s)
 }
 
 export default function Origin(props: { flightData: Observable<FlightVectorRaw[]> }) {
@@ -36,21 +35,20 @@ export default function Origin(props: { flightData: Observable<FlightVectorRaw[]
     }, [setData])
 
     const countryItems = data.map(([country, count], i) =>
-        <li className= 'list-group-item' key={i.toString()}>
-            {country + " with: #" + count + " flights"}
+        <li key={i.toString()}>
+            <p className='text-lg inline'>{i.toString()}. </p> {country + " with: #" + count + " flights"}
         </li>
     )
 
-    return (
-        <Card>
-            <Card.Header>Most popular origin countries</Card.Header>
-            <Card.Body>
-                <ol className='list-group list-group-numbered'>
-                    {countryItems}
-                </ol>
-                <Card.Text>
-                </Card.Text>
-            </Card.Body>
-        </Card>
+    return (<Card className="mt-6 w-96 border-solid border-2 ">
+        <CardBody>
+            <Typography variant="h5" color="blue-gray" className="mb-2">
+                Top three countries of origin 
+            </Typography>
+            <ol className='divide-y divide-slate-400'>
+                {countryItems}
+            </ol>
+        </CardBody>
+    </Card>
     )
 }
