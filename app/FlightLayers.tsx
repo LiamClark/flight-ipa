@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Accordion,
     AccordionHeader,
@@ -10,7 +10,7 @@ import { FlightVector, FlightVectorRaw, FlightVectorSchema } from "./api/data-de
 import { Observable, map, tap } from "rxjs";
 import { is } from 'superstruct'
 import { flightsInSlices, hasWarning } from "./Batch";
-import { Map } from "immutable";
+import { Map, Seq } from "immutable";
 import { FixedSizeGrid } from 'react-window'
 import { CSSProperties } from "react";
 import { Config } from "./Config";
@@ -24,12 +24,14 @@ function FlightLayerItem(props: {
     planes: FlightVector[],
     handleClick: (n: number) => void
 }) {
-
-    const colCount = 100
-    const rowCount = 5
+    const totalElements = props.planes.length
+    const rowCount = 10
+    const colCount = Math.ceil(totalElements / rowCount)
+    const [noWarning, warnings] = Seq(props.planes).partition(p => hasWarning(props.config, props.no, p))
+    const orderedPlanes = warnings.concat(noWarning).toArray()
 
     function index(row: number, col: number) {
-        return row * colCount + col
+        return col * rowCount + row
     }
 
     const Cell = (cellProps: {
@@ -37,11 +39,12 @@ function FlightLayerItem(props: {
         rowIndex: number,
         style: CSSProperties,
     }) => {
-        const plane = props.planes[index(cellProps.rowIndex, cellProps.columnIndex)]
-
+        const plane = orderedPlanes.at(index(cellProps.rowIndex, cellProps.columnIndex))
         if (plane) {
-            return (<div style={cellProps.style}>
-                Item {plane.callsign}
+            const showWarning = hasWarning(props.config, props.no, plane)
+
+            return (<div className="flex flex-row space-x-1" style={cellProps.style}>
+                {plane.callsign} {showWarning && <BellAlertIcon className="h-4 w-4" />}
             </div>)
         }
     }
@@ -49,7 +52,7 @@ function FlightLayerItem(props: {
     const totalWarnings = props.planes.filter(f => hasWarning(props.config, props.no, f)).length
     const alert = totalWarnings > 0 ? <BellAlertIcon className="h-6 w-6" title={totalWarnings.toString()} /> : null
 
-    return (<Accordion open={props.open === props.no}>
+    return (<Accordion className="overflow-auto" open={props.open === props.no}>
         <AccordionHeader className="text-sm py-2" onClick={() => props.handleClick(props.no)}>
             <div className="flex flex-row space-x-2">
                 <p>{layerString(props.no)} </p>
@@ -57,13 +60,19 @@ function FlightLayerItem(props: {
                 {totalWarnings > 0 ? <p>{totalWarnings}</p> : null}
             </div>
         </AccordionHeader>
+
+
         <AccordionBody className="py-2">
-            <FixedSizeGrid columnCount={colCount} columnWidth={150} rowCount={rowCount} rowHeight={15}
-                width={600} height={200}
+            <FixedSizeGrid columnCount={colCount} columnWidth={125} rowCount={rowCount} rowHeight={15}
+                width={1000} height={200}
             >
                 {Cell}
             </FixedSizeGrid>
+
+
         </AccordionBody>
+
+
     </Accordion>)
 }
 
@@ -89,11 +98,9 @@ export default function FlightLayers(props: { config: Config, flightData: Observ
 
     useEffect(() => {
         const sub = props.flightData.pipe(
-            tap(fs => console.log(fs)),
             map(fs => fs.filter((f): f is FlightVector => {
                 return is(f, FlightVectorSchema)
             })),
-            tap(fs => console.log(fs)),
             map(flightsInSlices)
         ).subscribe(m => setFlightLayers(m))
 
@@ -110,8 +117,3 @@ export default function FlightLayers(props: { config: Config, flightData: Observ
         </div>
     );
 }
-
-// export default function FlightLayers(props: { flightData: Observable<FlightVectorRaw[]> }) {
-//     return (
-//              )
-// }
