@@ -1,11 +1,12 @@
+"use client"
+
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Observable, map } from "rxjs";
 import { Set } from "immutable"
 import { FlightVector, FlightVectorRaw, FlightVectorSchema } from "./api/data-definition";
 import { useEffect, useState } from "react";
-import { DiffState, newOld } from "./Batch";
+import { DiffState, newOld } from "./FlightObservables";
 import { is } from "superstruct"
-
 
 export default function FlightDiff(props: { flightData: Observable<FlightVectorRaw[]> }) {
     const seed: DiffState = {
@@ -33,7 +34,10 @@ export default function FlightDiff(props: { flightData: Observable<FlightVectorR
                     New & finished flights
                 </Typography>
                 <Typography>
-                    {data.newItems.size} {data.removed.size}
+                    # new flights: {data.newItems.size} 
+                </Typography>
+                <Typography>
+                    # Completed flights: {data.removed.size}
                 </Typography>
             </CardBody>
         </Card>

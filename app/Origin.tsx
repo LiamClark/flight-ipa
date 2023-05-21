@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { scanOccurenceMap } from './Batch'
-import { Observable, map, tap } from 'rxjs';
+import { scanOccurenceMap } from './FlightObservables'
+import { Observable, map } from 'rxjs';
 import { Map } from 'immutable'
 import { FlightVectorRaw } from './api/data-definition';
-import { Card, CardBody, List, ListItem, Typography } from '@material-tailwind/react';
+import { Card, CardBody, Typography } from '@material-tailwind/react';
 
 function topThree(m: Map<string, number>): [string, number][] {
     const seq = m.toKeyedSeq()
@@ -36,7 +36,7 @@ export default function Origin(props: { flightData: Observable<FlightVectorRaw[]
 
     const countryItems = data.map(([country, count], i) =>
         <li key={i.toString()}>
-            <p className='text-lg inline'>{i.toString()}. </p> {country + " with: #" + count + " flights"}
+            <p className='text-lg inline'>{(i + 1).toString()}. </p> {country + " with: #" + count + " flights"}
         </li>
     )
 

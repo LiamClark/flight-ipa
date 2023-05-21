@@ -58,8 +58,6 @@ function groupCountries(xs: FlightVectorRaw[]): Map<string, number> {
 
 type OriginState = [Map<string, number>, Set<String>]
 
-//This implementation is still faulty.
-// Because it will count flights I have seen before.
 export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], OriginState> {
     const flightCountsSeed: Map<string, number> = Map()
     const knownFlightsSeed: Set<string> = Set()

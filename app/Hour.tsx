@@ -1,12 +1,12 @@
 'use client'
 
-import { geoFilter, slidingWindows } from "./Batch"
+import { geoFilter, slidingWindows } from "./FlightObservables"
 import { Observable, map, mergeMap } from "rxjs"
 import { useEffect, useState } from "react"
 import { Config, intervalsInAnHour } from "./Config"
 import { FlightVector, FlightVectorRaw, FlightVectorSchema } from "./api/data-definition"
 import { is } from "superstruct"
-import { Card, CardBody, CardFooter, Typography } from "@material-tailwind/react"
+import { Card, CardBody, Typography } from "@material-tailwind/react"
 
 
 export default function Hour(props: { config: Config, flightData: Observable<FlightVectorRaw[]> }) {
@@ -33,7 +33,7 @@ export default function Hour(props: { config: Config, flightData: Observable<Fli
     return (<Card className="mt-6 w-96 border-solid border-2">
         <CardBody>
             <Typography variant="h5" color="blue-gray" className="mb-2">
-                Amount of flights above the Netherlands average per hour
+                Average amount of flights above the Netherlands per hour
             </Typography>
             <Typography className="text-center text-xl font-medium">
                 {data}

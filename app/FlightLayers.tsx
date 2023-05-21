@@ -7,9 +7,9 @@ import {
     AccordionBody,
 } from "@material-tailwind/react";
 import { FlightVector, FlightVectorRaw, FlightVectorSchema } from "./api/data-definition";
-import { Observable, map, tap } from "rxjs";
+import { Observable, map } from "rxjs";
 import { is } from 'superstruct'
-import { flightsInSlices, hasWarning } from "./Batch";
+import { flightsInSlices, hasWarning } from "./FlightObservables";
 import { Map, Seq } from "immutable";
 import { FixedSizeGrid } from 'react-window'
 import { CSSProperties } from "react";
@@ -17,6 +17,11 @@ import { Config } from "./Config";
 import { BellAlertIcon } from "@heroicons/react/24/outline";
 
 
+
+/*
+    Component for an Accordion Item + Window grid
+
+*/
 function FlightLayerItem(props: {
     config: Config
     no: number,
@@ -52,7 +57,8 @@ function FlightLayerItem(props: {
     const totalWarnings = props.planes.filter(f => hasWarning(props.config, props.no, f)).length
     const alert = totalWarnings > 0 ? <BellAlertIcon className="h-6 w-6" title={totalWarnings.toString()} /> : null
 
-    return (<Accordion className="overflow-auto" open={props.open === props.no}>
+    return (
+    <Accordion className="overflow-auto" open={props.open === props.no}>
         <AccordionHeader className="text-sm py-2" onClick={() => props.handleClick(props.no)}>
             <div className="flex flex-row space-x-2">
                 <p>{layerString(props.no)} </p>
@@ -61,18 +67,12 @@ function FlightLayerItem(props: {
             </div>
         </AccordionHeader>
 
-
         <AccordionBody className="py-2">
             <FixedSizeGrid columnCount={colCount} columnWidth={125} rowCount={rowCount} rowHeight={15}
-                width={1000} height={200}
-            >
+                width={1000} height={200}>
                 {Cell}
             </FixedSizeGrid>
-
-
         </AccordionBody>
-
-
     </Accordion>)
 }
 

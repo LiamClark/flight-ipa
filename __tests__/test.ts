@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { altitudeToSlice } from "@/app/Batch"
+import { altitudeToSlice } from "@/app/FlightObservables"
 import { from, firstValueFrom, bufferCount } from 'rxjs';
 import { FlightVectorRaw } from '@/app/api/data-definition';
 import { List } from 'immutable';
@@ -47,7 +47,7 @@ export const data: FlightVectorRaw[] = [
 ]
 
 
-describe('batch mode', () => {
+describe('observables', () => {
     const obs = from(data)
     test('async test', async () => {
         const flightOne = await firstValueFrom(obs)
@@ -68,7 +68,6 @@ describe('batch mode', () => {
     })
 
     test('buffer windows', done => {
-
         let index = 0
         const results = [
             [1, 2, 3],

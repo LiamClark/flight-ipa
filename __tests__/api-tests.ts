@@ -1,12 +1,8 @@
 
 import { GeoLocationRequest, GeoLocationRequestSchema } from "@/app/api/data-definition";
-import { inNetherlands } from '@/app/api/logic';
+import { inNetherlands } from '@/app/api/geo-location';
 import { describe, expect, test } from '@jest/globals';
 import { assert } from 'superstruct';
-
-
-
-
 
 describe("country lookup", () => {
     test("A location request with complete data", () => {

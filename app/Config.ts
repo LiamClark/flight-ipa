@@ -12,8 +12,8 @@ export class Config {
     constructor(testing: boolean, geoFilterUrl: string, testPollingInterval: number = 5000) {
         this.testPollingInterval = testPollingInterval 
         //400 tokens per day, 4 tokens per request means 100 requests per day
-        //4.16 requests per hour and that is 56250 in miliseconds
-        this.productionPollingInterval = 56250
+        //4.16 requests per hour and that is 865384 in miliseconds
+        this.productionPollingInterval = 865384 
         this.testing = testing
         this.geoFilterUrl = geoFilterUrl
      }
@@ -25,7 +25,6 @@ export class Config {
             return this.productionPollingInterval
         }
      }
-
 }
 
 export function intervalsInAnHour(config: Config) {

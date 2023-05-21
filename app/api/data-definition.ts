@@ -1,4 +1,4 @@
-import { assert, object, number, string, array, Infer, nullable, boolean, nonempty } from 'superstruct'
+import {  object, number, string, array, Infer, nullable, boolean, nonempty } from 'superstruct'
 
 export type GeoLocationRequest = Infer<typeof GeoLocationRequestSchema>
 
@@ -7,7 +7,6 @@ export const GeoLocationRequestSchema = object({
     longitude: number(),
     latitude: number(),
 })
-
 
 
 export type GeoLocationRequests = Infer<typeof GeoLocationRequestsSchema>

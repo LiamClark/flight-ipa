@@ -1,22 +1,17 @@
 'use client'
 
 import Origin from './Origin'
-import { Disclosure, Menu } from '@headlessui/react'
+import { Disclosure } from '@headlessui/react'
 import { BellIcon } from '@heroicons/react/24/outline'
 import Hour from './Hour'
 import { BehaviorSubject, Observable, filter, share, tap } from 'rxjs'
-import { loadData } from './Batch'
+import { loadData } from './FlightObservables'
 import { Config } from './Config'
 import FlightLayers from './FlightLayers'
 import { FlightVectorRaw } from './api/data-definition'
 import FlightDiff from './FlightDiff'
 
-const user = {
-  imageUrl:
-    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-}
-
-const config: Config = new Config(false, "http://localhost:3000/api")
+const config: Config = new Config(true, "http://localhost:3000/api")
 
 // For today let's make a hot observable, pass it down as props.
 // Then subscribe to it in a useEffect hook, since the observable
