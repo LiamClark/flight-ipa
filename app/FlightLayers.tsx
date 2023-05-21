@@ -11,6 +11,8 @@ import { Observable, map, tap } from "rxjs";
 import { is } from 'superstruct'
 import { flightsInSlices } from "./Batch";
 import { Map } from "immutable";
+import { FixedSizeGrid } from 'react-window'
+import { CSSProperties } from "react";
 
 
 function FlightLayerItem(props: {
@@ -19,16 +21,39 @@ function FlightLayerItem(props: {
     planes: FlightVector[],
     handleClick: (n: number) => void
 }) {
+
+    const colCount = 100
+    const rowCount = 5
+
+    function index(row: number, col: number) {
+        return row * colCount + col
+    }
+
+    const Cell = (cellProps: {
+        columnIndex: number,
+        rowIndex: number,
+        style: CSSProperties,
+    }) => {
+        const plane = props.planes[index(cellProps.rowIndex, cellProps.columnIndex)]
+
+        if (plane) {
+            return (<div style={cellProps.style}>
+                Item {plane.callsign}
+            </div>)
+        }
+    }
+
+
     return (<Accordion open={props.open === props.no}>
         <AccordionHeader className="text-sm py-2" onClick={() => props.handleClick(props.no)}>
             {layerString(props.no)}
         </AccordionHeader>
         <AccordionBody className="py-2">
-            <ol>
-                {props.planes.map(p => {
-                    return <li key={p.callsign}><p>{p.callsign}</p></li>
-                })}
-            </ol>
+            <FixedSizeGrid columnCount={colCount} columnWidth={150} rowCount={rowCount} rowHeight={15}
+                width={300} height={500}
+            >
+                {Cell}
+            </FixedSizeGrid>
         </AccordionBody>
     </Accordion>)
 }
@@ -39,14 +64,15 @@ function layerString(no: number): string {
 
 export default function FlightLayers(props: { flightData: Observable<FlightVectorRaw[]> }) {
     const [open, setOpen] = useState(1);
-    const initialState: Map<number, FlightVector[]> = Map({
-        0: [] as FlightVector[],
-        1: [] as FlightVector[],
-        2: [] as FlightVector[],
-        3: [] as FlightVector[],
-        4: [] as FlightVector[],
-        5: [] as FlightVector[],
-    })
+    const items :[number, FlightVector[]][] = [
+        [1, [] as FlightVector[]],
+        [2, [] as FlightVector[]],
+        [3, [] as FlightVector[]],
+        [4, [] as FlightVector[]],
+        [5, [] as FlightVector[]],
+        [6, [] as FlightVector[]],
+    ]
+    const initialState: Map<number, FlightVector[]> = Map(items) 
     const [flightLayers, setFlightLayers] = useState(initialState)
     const handleOpen = (value: number) => {
         setOpen(open === value ? 0 : value);

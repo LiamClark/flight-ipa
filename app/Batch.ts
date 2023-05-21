@@ -153,9 +153,10 @@ function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVect
     return newFs
 }
 
-export function flightsInSlices(xs: FlightVector[]) {
-    return List(xs)
+export function flightsInSlices(xs: FlightVector[]): Map<number, FlightVector[]> {
+    return Seq(xs)
         .groupBy(f => altitudeToSlice(f.baro_altitude))
+        .map(s => s.toArray())
 }
 
 export function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
