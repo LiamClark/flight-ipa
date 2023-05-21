@@ -1,9 +1,8 @@
 import { List, Map, Seq, Set } from 'immutable';
-import { EMPTY, Observable, OperatorFunction, bufferCount, count, defer, filter, from, map, mergeMap, of, scan, timer } from 'rxjs';
-import { Config, convertToHourlyRate, intervalsInAnHour } from './Config';
+import { Observable, OperatorFunction, defer, from, map, mergeMap, of, scan, skip, timer } from 'rxjs';
+import { Config } from './Config';
 import { is, assert } from 'superstruct'
-import { dateFromTimeStamp } from './TimeWindows';
-import { FlightVector, FlightVectorRaw, FlightVectorRawSchema, GeoLocationRequest, GeoLocationRequestsSchema, GeoLocationResponse, GeoLocationResponsesSchema } from './api/data-definition';
+import { FlightVector, FlightVectorRaw, FlightVectorRawSchema, GeoLocationRequest, GeoLocationResponse, GeoLocationResponsesSchema } from './api/data-definition';
 
 function fromJsonArray(json: any): FlightVectorRaw {
     const rawFlightData = {
@@ -39,7 +38,6 @@ export function loadData(config: Config): Observable<FlightVectorRaw[]> {
             .then(json => {
                 const flights: any[] = json.states.map(fromJsonArray);
                 const validatedFlights = flights.filter((v): v is FlightVectorRaw => {
-                    // assert(v, FlightVectorRawSchema)
                     return is(v, FlightVectorRawSchema);
                 });
                 return validatedFlights
@@ -48,30 +46,8 @@ export function loadData(config: Config): Observable<FlightVectorRaw[]> {
         return from(promise)
     })
 
-
-    // This does a conversion from any to FlightVector[]
-    // can I add validation to this?
     return timer(0, config.pollingInterval())
         .pipe(mergeMap(_ => fetchApiData))
-}
-
-export function topCountries(data: Observable<FlightVectorRaw[]>): Observable<string[]> {
-    return data.pipe(
-        map(topThreeCountries)
-    )
-}
-
-//optimize this operation
-function topThreeCountries(xs: FlightVectorRaw[]): string[] {
-    const map = Seq(xs).groupBy(s => s.origin_country)
-    const seq = map.mapEntries(([k, v]) => [k, v.size ?? 0])
-        .toKeyedSeq()
-
-    return seq.sortBy((v, k) => v)
-        .reverse()
-        .take(3)
-        .toArray()
-        .map(([s, _]) => s)
 }
 
 function groupCountries(xs: FlightVectorRaw[]): Map<string, number> {
@@ -91,7 +67,7 @@ export function scanOccurenceMap(): OperatorFunction<FlightVectorRaw[], OriginSt
     return scan(([flightCounts, knownFlights], fs) => {
         const newFlights = fs.filter(fs => !knownFlights.has(fs.callsign))
         const newFlightCounts = flightCounts.mergeWith((a, b) => a + b, groupCountries(newFlights))
-        const newKnownFlights = newFlights.reduce((a,b) => a.add(b.callsign) , knownFlights)
+        const newKnownFlights = newFlights.reduce((a, b) => a.add(b.callsign), knownFlights)
 
         return [newFlightCounts, newKnownFlights]
     }, [flightCountsSeed, knownFlightsSeed])
@@ -109,29 +85,14 @@ export function geoFilter(config: Config, fs: FlightVector[]): Observable<Flight
                 method: "POST",
                 body: JSON.stringify({ flights: requests })
             }).then(r => r.json())
-              .then(r => {
-                    try {
-                        assert(r, GeoLocationResponsesSchema)
-                    } catch (e: any) {
-                        debugger
-                    }
+                .then(r => {
+                    assert(r, GeoLocationResponsesSchema)
                     return r
-              })
+                })
         ).pipe(
             map(res => filterZip(fs, res.flights))
         )
     )
-}
-
-export function slidingWindows<X>(size: number): OperatorFunction<X, List<X>> {
-    const seed: List<X> = List()
-    return scan((acc, x) => {
-        if (acc.size == size) {
-            return acc.remove(0).push(x)
-        } else {
-            return acc.push(x)
-        }
-    }, seed)
 }
 
 function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVector[] {
@@ -151,6 +112,17 @@ function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVect
     }
 
     return newFs
+}
+
+export function slidingWindows<X>(size: number): OperatorFunction<X, List<X>> {
+    const seed: List<X> = List()
+    return scan((acc, x) => {
+        if (acc.size == size) {
+            return acc.remove(0).push(x)
+        } else {
+            return acc.push(x)
+        }
+    }, seed)
 }
 
 export function flightsInSlices(xs: FlightVector[]): Map<number, FlightVector[]> {
@@ -173,56 +145,9 @@ export function altitudeToSlice(altitude: number) {
     return Math.floor(altitude / 1000)
 }
 
-
-// // First lets do the amount of flights in an hour.
-// function flightsPerHour(xs: FlightVector[], state: FlightsPerHourState) {
-//     const dates: [FlightVector, Date][] = xs.map(x => [x, dateFromTimeStamp(x.time_position)])
-//     //TODO: If we roll into a new day reset the state. 
-//     const newState = anyMatch(dates, ([_, d]) => d.getDate() != new Date().getDate()) ? state : state
-
-//     // Here I want to remove flights we already have recorded for the current hour.
-//     const flightsToLocate = dates.filter(([f, d]) => { 
-//         const callSigns = newState.flights.get(d.getHours())
-//         if (callSigns) {
-//             //we flip because we are interested in new flights!
-//            return !callSigns.has(f.callsign) 
-
-//         } else {
-//             const set: Set<string> = new Set(f.callsign)
-//             newState.flights.set(d.getHours(), set)
-//             //if we have no flights for this this needs to go through therefor we return true
-//             return true;
-//         }
-//     })
-
-//     from(flightsToLocate).pipe(
-//         //filter to flights only above the netherlands
-//         mergeMap(([f,d]) => filterGeoLocation(f)))
-
-//     )
-
-// }
-
-// function anyMatch<A>(xs: A[], f: (x: A) => boolean) {
-//     for (let x of xs) {
-//         if (f(x)) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }
-
-//if I want to show buckets of hours I need to know which hour already knows about which flights a.k.a. 
-interface FlightsPerHourState {
-    //the date for which this bucket holds
-    date: Date
-
-    //a map of an hour with a set of all the callsigns already reported in that hour.
-    flights: Map<number, Set<string>>
-}
-
-interface Position {
-    latitude: number
-    longitude: number
+export type DiffState = {
+    all: Set<string>
+    newItems: Set<string>
+    removed: Set<string>
 }
 
