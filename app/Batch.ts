@@ -109,14 +109,14 @@ export function geoFilter(config: Config, fs: FlightVector[]): Observable<Flight
                 method: "POST",
                 body: JSON.stringify({ flights: requests })
             }).then(r => r.json())
-                .then(r => {
+              .then(r => {
                     try {
                         assert(r, GeoLocationResponsesSchema)
                     } catch (e: any) {
                         debugger
                     }
                     return r
-                })
+              })
         ).pipe(
             map(res => filterZip(fs, res.flights))
         )
@@ -153,15 +153,12 @@ function filterZip(fs: FlightVector[], resps: GeoLocationResponse[]): FlightVect
     return newFs
 }
 
-function flightsInSlices(xs: FlightVector[]) {
+export function flightsInSlices(xs: FlightVector[]) {
     return List(xs)
-        //put unkown flights in a negative bucket
-        .groupBy(f => altitudeToSlice(f.baro_altitude ?? -1))
-        //remove that bucket
-        .delete(-1)
+        .groupBy(f => altitudeToSlice(f.baro_altitude))
 }
 
-function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
+export function hasWarning(config: Config, altitudeSlice: number, f: FlightVector): boolean {
     const secondsUntilNextPoll = config.pollingInterval() / 1000
     if (f.baro_altitude) {
         const expectedAltitude = f.baro_altitude + (f.vertical_rate * secondsUntilNextPoll)
